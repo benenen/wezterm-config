@@ -1,7 +1,10 @@
 local wezterm = require('wezterm')
 local platform = require('utils.platform')
 local backdrops = require('utils.backdrops')
+local domains = require('config.domains')
+local ssh = require('utils.ssh')
 local act = wezterm.action
+local nf = wezterm.nerdfonts
 
 local mod = {}
 
@@ -16,6 +19,54 @@ elseif platform.is_win or platform.is_linux then
 
 end
 
+local function build_ssh_domain_choices()
+   local choices = {}
+   local choices_data = {}
+
+   for idx, domain in ipairs(domains.ssh_domains) do
+      table.insert(choices, {
+         id = tostring(idx),
+         label = nf.md_ssh .. ' ' .. domain.name,
+      })
+      table.insert(choices_data, {
+         ssh_domain = domain,
+      })
+   end
+
+   return choices, choices_data
+end
+
+local function spawn_ssh_domain_in_new_tab(window, pane, domain)
+   if not domain or not domain.name or domain.name == '' then
+      wezterm.log_error('failed to resolve SSH domain name')
+      return
+   end
+
+   window:perform_action(
+      act.SpawnCommandInNewTab({
+         domain = { DomainName = domain.name },
+         args = ssh.build_remote_program_args(tostring(ssh.resolve_pane_index(pane))),
+      }),
+      pane
+   )
+end
+
+local function split_current_pane(window, pane, direction)
+   local new_pane = pane:split({
+      direction = direction,
+      domain = 'CurrentPaneDomain',
+   })
+
+   local domain_name = pane.get_domain_name and pane:get_domain_name() or nil
+   if not new_pane or not ssh.is_ssh_domain_name(domain_name) then
+      return
+   end
+
+   new_pane:send_text(ssh.build_tmux_attach_input(tostring(ssh.resolve_pane_index(new_pane))))
+end
+
+local ssh_domain_choices, ssh_domain_choices_data = build_ssh_domain_choices()
+
 -- stylua: ignore
 local keys = {
    -- misc/useful --
@@ -27,6 +78,23 @@ local keys = {
       key = 'F5',
       mods = 'NONE',
       action = act.ShowLauncherArgs({ flags = 'FUZZY|WORKSPACES' }),
+   },
+   {
+      key = 'F6',
+      mods = 'NONE',
+      action = act.InputSelector({
+         title = 'InputSelector: SSH Domains',
+         choices = ssh_domain_choices,
+         fuzzy = true,
+         fuzzy_description = nf.md_ssh .. ' Select SSH domain: ',
+         action = wezterm.action_callback(function(window, pane, id, _label)
+            if not id then
+               return
+            end
+
+            spawn_ssh_domain_in_new_tab(window, pane, ssh_domain_choices_data[tonumber(id)].ssh_domain)
+         end),
+      }),
    },
    { key = 'F11', mods = 'NONE',    action = act.ToggleFullScreen },
    { key = 'F12', mods = 'NONE',    action = act.ShowDebugOverlay },
@@ -182,12 +250,16 @@ local keys = {
    {
       key = 'e',
       mods = mod.SUPER,
-      action = act.SplitVertical({ domain = 'CurrentPaneDomain' }),
+      action = wezterm.action_callback(function(window, pane)
+         split_current_pane(window, pane, 'Bottom')
+      end),
    },
    {
       key = 'd',
       mods = mod.SUPER,
-      action = act.SplitHorizontal({ domain = 'CurrentPaneDomain' }),
+      action = wezterm.action_callback(function(window, pane)
+         split_current_pane(window, pane, 'Right')
+      end),
    },
 
    -- panes: zoom+close pane

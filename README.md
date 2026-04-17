@@ -235,6 +235,7 @@ Most of the key bindings revolve around a <kbd>SUPER</kbd> and <kbd>SUPER_REV</k
 | <kbd>F3</kbd>                     | `ShowLauncher`                              |
 | <kbd>F4</kbd>                     | `ShowLauncher` <sub>(tabs only)</sub>       |
 | <kbd>F5</kbd>                     | `ShowLauncher` <sub>(workspaces only)</sub> |
+| <kbd>F6</kbd>                     | `InputSelector` <sub>(SSH domains only)</sub> |
 | <kbd>F11</kbd>                    | `ToggleFullScreen`                          |
 | <kbd>F12</kbd>                    | `ShowDebugOverlay`                          |
 | <kbd>SUPER</kbd>+<kbd>f</kbd>     | Search Text                                 |

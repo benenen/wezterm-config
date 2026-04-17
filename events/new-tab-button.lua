@@ -3,6 +3,7 @@ local wezterm = require('wezterm')
 local launch_menu = require('config.launch').launch_menu
 local domains = require('config.domains')
 local Cells = require('utils.cells')
+local ssh = require('utils.ssh')
 
 local nf = wezterm.nerdfonts
 local act = wezterm.action
@@ -26,6 +27,21 @@ local cells = Cells:new()
    :add_segment('icon_ssh', ' ' .. nf.md_ssh .. ' ', colors.icon_ssh)
    :add_segment('icon_unix', ' ' .. nf.dev_gnu .. ' ', colors.icon_unix)
    :add_segment('label_text', '', colors.label_text, attr(attr.intensity('Bold')))
+
+local function spawn_ssh_domain_in_new_tab(window, pane, domain)
+   if not domain or not domain.name or domain.name == '' then
+      wezterm.log_error('failed to resolve SSH domain name')
+      return
+   end
+
+   window:perform_action(
+      act.SpawnCommandInNewTab({
+         domain = { DomainName = domain.name },
+         args = ssh.build_remote_program_args(tostring(ssh.resolve_pane_index(pane))),
+      }),
+      pane
+   )
+end
 
 local function build_choices()
    local choices = {}
@@ -69,7 +85,7 @@ local function build_choices()
          label = wezterm.format(cells:render({ 'icon_ssh', 'label_text' })),
       })
       table.insert(choices_data, {
-         domain = { DomainName = v.name },
+         ssh_domain = v,
       })
       idx = idx + 1
    end
@@ -111,7 +127,13 @@ M.setup = function()
                   end
                   wezterm.log_info('you selected ', id, label)
                   wezterm.log_info(choices_data[tonumber(id)])
-                  window:perform_action(act.SpawnCommandInNewTab(choices_data[tonumber(id)]), pane)
+                  local choice = choices_data[tonumber(id)]
+                  if choice.ssh_domain then
+                     spawn_ssh_domain_in_new_tab(window, pane, choice.ssh_domain)
+                     return
+                  end
+
+                  window:perform_action(act.SpawnCommandInNewTab(choice), pane)
                end),
             }),
             pane
