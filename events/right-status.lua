@@ -3,6 +3,7 @@ local wezterm = require('wezterm')
 local umath = require('utils.math')
 local Cells = require('utils.cells')
 local OptsValidator = require('utils.opts-validator')
+local backdrops = require('utils.backdrops')
 
 local nf = wezterm.nerdfonts
 local attr = Cells.attr
@@ -25,6 +26,8 @@ local M = {}
 
 local ICON_SEPARATOR = nf.oct_dash
 local ICON_DATE = nf.fa_calendar
+local BACKDROP_SWITCH_INTERVAL = 300
+local last_backdrop_switch = os.time()
 
 ---@type string[]
 local discharging_icons = {
@@ -102,6 +105,12 @@ M.setup = function(opts)
    ---@cast valid_opts Event.RightStatusOptions
 
    wezterm.on('update-status', function(window, _pane)
+      local now = os.time()
+      if now - last_backdrop_switch >= BACKDROP_SWITCH_INTERVAL then
+         backdrops:random(window)
+         last_backdrop_switch = now
+      end
+
       local battery_text, battery_icon = battery_info()
 
       cells

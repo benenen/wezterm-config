@@ -8,9 +8,12 @@ local mod = {}
 if platform.is_mac then
    mod.SUPER = 'SUPER'
    mod.SUPER_REV = 'SUPER|CTRL'
+   mod.CTRL = 'SUPER' 
 elseif platform.is_win or platform.is_linux then
    mod.SUPER = 'ALT' -- to not conflict with Windows key shortcuts
    mod.SUPER_REV = 'ALT|CTRL'
+   mod.CTRL = 'CTRL'
+
 end
 
 -- stylua: ignore
@@ -54,8 +57,20 @@ local keys = {
    { key = 'Backspace',  mods = mod.SUPER,     action = act.SendString '\u{15}' },
 
    -- copy/paste --
-   { key = 'c',          mods = 'CTRL|SHIFT',  action = act.CopyTo('Clipboard') },
-   { key = 'v',          mods = 'CTRL|SHIFT',  action = act.PasteFrom('Clipboard') },
+   {
+      key = 'c',
+      mods = mod.CTRL,
+      action = wezterm.action_callback(function(window, pane)
+         local has_selection = window:get_selection_text_for_pane(pane) ~= ''
+         if has_selection then
+            window:perform_action(act.CopyTo('Clipboard'), pane)
+            window:perform_action(act.ClearSelection, pane)
+         else
+            window:perform_action(act.SendKey({ key = 'c', mods = 'CTRL' }), pane)
+         end
+      end),
+   },
+   { key = 'v',          mods = mod.CTRL,  action = act.PasteFrom('Clipboard') },
 
    -- tabs --
    -- tabs: spawn+close
@@ -165,13 +180,13 @@ local keys = {
    -- panes --
    -- panes: split panes
    {
-      key = [[\]],
+      key = 'e',
       mods = mod.SUPER,
       action = act.SplitVertical({ domain = 'CurrentPaneDomain' }),
    },
    {
-      key = [[\]],
-      mods = mod.SUPER_REV,
+      key = 'd',
+      mods = mod.SUPER,
       action = act.SplitHorizontal({ domain = 'CurrentPaneDomain' }),
    },
 
@@ -191,8 +206,8 @@ local keys = {
    },
 
    -- panes: scroll pane
-   { key = 'u',        mods = mod.SUPER, action = act.ScrollByLine(-5) },
-   { key = 'd',        mods = mod.SUPER, action = act.ScrollByLine(5) },
+   -- { key = 'u',        mods = mod.SUPER, action = act.ScrollByLine(-5) },
+   -- { key = 'd',        mods = mod.SUPER, action = act.ScrollByLine(5) },
    { key = 'PageUp',   mods = 'NONE',    action = act.ScrollByPage(-0.75) },
    { key = 'PageDown', mods = 'NONE',    action = act.ScrollByPage(0.75) },
 
