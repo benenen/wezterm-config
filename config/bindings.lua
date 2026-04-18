@@ -3,10 +3,28 @@ local platform = require('utils.platform')
 local backdrops = require('utils.backdrops')
 local domains = require('config.domains')
 local ssh = require('utils.ssh')
+local workspace_picker = require('utils.workspace-picker')
 local act = wezterm.action
 local nf = wezterm.nerdfonts
 
 local mod = {}
+
+workspace_picker.setup({
+	keybinds = nil, -- Disable automatic keybinding setup
+   labels = {
+		workspace = "🏢",
+		zoxide = "📁",
+		current = "👈",
+		create_new = "✨",
+	},
+   colors = {
+		workspace_prefix = "#b8bb26",
+		zoxide_prefix = "#fb4934",
+		current_indicator = "#b8bb26",
+		text = "#ebdbb2",
+		path = "#928374",
+	},
+})
 
 if platform.is_mac then
    mod.SUPER = 'SUPER'
@@ -77,7 +95,10 @@ local keys = {
    {
       key = 'F5',
       mods = 'NONE',
-      action = act.ShowLauncherArgs({ flags = 'FUZZY|WORKSPACES' }),
+      -- action = act.ShowLauncherArgs({ flags = 'FUZZY|WORKSPACES' }),
+      action = wezterm.action_callback(function(win, pane)
+			workspace_picker.show_workspace_selector(win, pane)
+		end),
    },
    {
       key = 'F6',
