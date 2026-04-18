@@ -31,6 +31,7 @@ return {
 
    -- background: pass in `true` if you want wezterm to start with focus mode on (no bg images)
    background = backdrops:initial_options({ no_img = false }),
+   -- text_background_opacity = 1,
 
    -- scrollbar
    enable_scroll_bar = true,

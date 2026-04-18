@@ -1,3 +1,5 @@
+-- ref https://github.com/dracula/wezterm/blob/main/legacy/dracula.lua
+
 return {
     -- The default text color
     foreground = "#f8f8f2",
