@@ -1,6 +1,13 @@
 local gpu_adapters = require('utils.gpu-adapter')
 local backdrops = require('utils.backdrops')
 local colors = require('colors.custom')
+local wezterm = require('wezterm')
+
+function scheme_for_appearance(appearance)
+   -- return "Catppuccin Mocha"
+   -- return "Catppuccin Latte"
+   return "Dracula (Official)"
+end
 
 return {
    max_fps = 120,
@@ -19,7 +26,8 @@ return {
    cursor_blink_rate = 650,
 
    -- color scheme
-   colors = colors,
+   -- colors = colors,
+   color_scheme = scheme_for_appearance(wezterm.gui.get_appearance()),
 
    -- background: pass in `true` if you want wezterm to start with focus mode on (no bg images)
    background = backdrops:initial_options({ no_img = false }),
