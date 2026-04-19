@@ -93,16 +93,35 @@ function M.get_hostname()
    return hostname or ''
 end
 
---- Get all system information
+-- Cache for system information
+local cache = {
+   cpu = '',
+   memory = '',
+   hostname = '',
+   last_update = 0,
+}
+
+local CACHE_TTL = 2000 -- Cache for 2 seconds (in milliseconds)
+
+--- Get all system information with caching
 ---@return string cpu_usage
 ---@return string memory_usage
 ---@return string hostname
 function M.system_info()
-   local cpu = M.get_cpu_usage()
-   local memory = M.get_memory_usage()
-   local hostname = M.get_hostname()
+   local now = os.time() * 1000
 
-   return cpu, memory, hostname
+   -- Return cached values if still fresh
+   if now - cache.last_update < CACHE_TTL then
+      return cache.cpu, cache.memory, cache.hostname
+   end
+
+   -- Update cache
+   cache.cpu = M.get_cpu_usage()
+   cache.memory = M.get_memory_usage()
+   cache.hostname = M.get_hostname()
+   cache.last_update = now
+
+   return cache.cpu, cache.memory, cache.hostname
 end
 
 return M
