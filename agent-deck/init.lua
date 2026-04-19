@@ -7,7 +7,7 @@ local M = {}
 
 -- Internal state
 local state = {
-   agent_states = {},  -- pane_id -> { agent_type, status, last_update }
+   agent_states = {},  -- pane_id -> { agent_type, status, last_update, pending_status, pending_since }
 }
 
 -- Default agent configurations
@@ -103,6 +103,7 @@ local config = {
    agents = default_agents,
    status_patterns = default_status_patterns,
    max_lines = 100,
+   status_debounce_ms = 2000,  -- Status must be stable for 2 seconds before changing
 }
 
 --- Strip ANSI escape codes from text
@@ -270,15 +271,48 @@ function M.update_pane(pane)
       return nil
    end
 
-   local status = detect_status(pane)
-   local agent_state = {
-      agent_type = agent_type,
-      status = status,
-      last_update = os.time() * 1000,
-   }
+   local new_status = detect_status(pane)
+   local now = os.time() * 1000
+   local current_state = state.agent_states[pane_id]
 
-   state.agent_states[pane_id] = agent_state
-   return agent_state
+   -- If this is a new agent or no previous state
+   if not current_state then
+      local agent_state = {
+         agent_type = agent_type,
+         status = new_status,
+         last_update = now,
+         pending_status = nil,
+         pending_since = nil,
+      }
+      state.agent_states[pane_id] = agent_state
+      return agent_state
+   end
+
+   -- If status hasn't changed, keep current status
+   if new_status == current_state.status then
+      current_state.pending_status = nil
+      current_state.pending_since = nil
+      current_state.last_update = now
+      return current_state
+   end
+
+   -- Status is different - check if we should debounce
+   if current_state.pending_status == new_status then
+      -- Same pending status, check if enough time has passed
+      if now - current_state.pending_since >= config.status_debounce_ms then
+         -- Debounce period passed, commit the new status
+         current_state.status = new_status
+         current_state.pending_status = nil
+         current_state.pending_since = nil
+         current_state.last_update = now
+      end
+   else
+      -- New pending status, start debounce timer
+      current_state.pending_status = new_status
+      current_state.pending_since = now
+   end
+
+   return current_state
 end
 
 --- Get agent state for a pane
@@ -305,6 +339,21 @@ function M.count_agents_by_status()
    return counts
 end
 
+--- Debug: Get detailed agent states (for troubleshooting)
+---@return table
+function M.debug_get_agent_details()
+   local details = {}
+   for pane_id, agent_state in pairs(state.agent_states) do
+      table.insert(details, {
+         pane_id = pane_id,
+         agent_type = agent_state.agent_type,
+         status = agent_state.status,
+         last_update = agent_state.last_update,
+      })
+   end
+   return details
+end
+
 --- Configure the module
 ---@param opts table
 function M.setup(opts)
@@ -317,6 +366,9 @@ function M.setup(opts)
       end
       if opts.max_lines then
          config.max_lines = opts.max_lines
+      end
+      if opts.status_debounce_ms then
+         config.status_debounce_ms = opts.status_debounce_ms
       end
       if opts.debug then
          config.debug = opts.debug
