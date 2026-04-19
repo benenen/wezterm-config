@@ -49,10 +49,8 @@ function M.get_memory_usage()
 
    -- Parse: "PhysMem: 15G used (2647M wired, 4261M compressor), 277M unused."
    -- Extract used and unused
-   local used_str = output:match('(%d+[%.%d]*)([GMK]) used')
-   local used_unit = output:match('%d+[%.%d]*([GMK]) used')
-   local unused_str = output:match('(%d+[%.%d]*)([GMK]) unused')
-   local unused_unit = output:match('%d+[%.%d]*([GMK]) unused')
+   local used_str, used_unit = output:match('(%d+[%.%d]*)([GMK]) used')
+   local unused_str, unused_unit = output:match('(%d+[%.%d]*)([GMK]) unused')
 
    if not used_str or not unused_str then
       return ''
