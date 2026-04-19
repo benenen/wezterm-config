@@ -5,7 +5,7 @@ local umath = require('utils.math')
 local Cells = require('utils.cells')
 local OptsValidator = require('utils.opts-validator')
 local backdrops = require('utils.backdrops')
-local system_info = require('utils.system-info')
+-- local system_info = require('utils.system-info')
 
 local nf = wezterm.nerdfonts
 local attr = Cells.attr
@@ -202,7 +202,9 @@ M.setup = function(opts)
 
       local battery_text, battery_icon = battery_info()
       local working_icon, working_text, waiting_icon, waiting_text, idle_icon, idle_text, inactive_icon, inactive_text, has_agents = agent_status_info()
-      local cpu_icon, cpu_text, memory_icon, memory_text, hostname_icon, hostname_text, has_system_info, has_hostname = system_info_display()
+      -- Temporarily disabled for performance
+      -- local cpu_icon, cpu_text, memory_icon, memory_text, hostname_icon, hostname_text, has_system_info, has_hostname = system_info_display()
+      local cpu_icon, cpu_text, memory_icon, memory_text, hostname_icon, hostname_text, has_system_info, has_hostname = '', '', '', '', '', '', false, false
 
       cells
          :update_segment_text('agent_working_icon', working_icon)
