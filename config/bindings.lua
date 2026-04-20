@@ -189,6 +189,7 @@ local keys = {
       end),
    },
    { key = 'v',          mods = mod.CTRL,  action = act.PasteFrom('Clipboard') },
+   { key = 'Enter',      mods = mod.CTRL,  action = act.SendKey({ key = 'j', mods = 'CTRL' }) },
 
    -- tabs --
    -- tabs: spawn+close
