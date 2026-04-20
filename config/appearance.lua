@@ -80,4 +80,6 @@ return {
       fade_out_duration_ms = 250,
       target = 'CursorColor',
    },
+
+   quote_dropped_files = "WindowsAlwaysQuoted",
 }
