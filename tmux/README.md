@@ -105,7 +105,7 @@ set -g window-status-format "#[fg=#7aa2f7] #I:#W "
 set -g window-status-current-format "#[fg=#1f2335,bg=#9ece6a,bold] #I:#W #[default]"
 
 # 右边显示主机名、日期、时间.
-set -g status-right "#[fg=#bb9af7]#h #[fg=#565f89]| #[fg=#7dcfff]%Y-%m-%d #[fg=#e0af68]%H:%M "
+set -g status-right "#[fg=#bb9af7]#h #[fg=#565f89]| #[fg=#e0af68]%Z #[fg=#7dcfff]%Y-%m-%d #[fg=#e0af68]%H:%M "
 
 ##### Handy binds ############################################################
 
