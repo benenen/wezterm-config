@@ -28,19 +28,38 @@ local cells = Cells:new()
    :add_segment('icon_unix', ' ' .. nf.dev_gnu .. ' ', colors.icon_unix)
    :add_segment('label_text', '', colors.label_text, attr(attr.intensity('Bold')))
 
-local function spawn_ssh_domain_in_new_tab(window, pane, domain)
+local function spawn_ssh_domain_in_new_tab(window, _pane, domain)
    if not domain or not domain.name or domain.name == '' then
       wezterm.log_error('failed to resolve SSH domain name')
       return
    end
 
-   window:perform_action(
-      act.SpawnCommandInNewTab({
+   local mux_window = window.mux_window and window:mux_window() or nil
+   if not mux_window or not mux_window.spawn_tab then
+      wezterm.log_error('failed to resolve mux window for SSH spawn')
+      return
+   end
+
+   local session_name = ssh.resolve_next_root_tmux_session_name(mux_window)
+   if not session_name then
+      wezterm.log_error('failed to resolve tmux session name for SSH tab')
+      return
+   end
+
+   local ok, new_tab = pcall(function()
+      return mux_window:spawn_tab({
          domain = { DomainName = domain.name },
-         args = ssh.build_remote_program_args(tostring(ssh.resolve_pane_index(pane))),
-      }),
-      pane
-   )
+         args = ssh.build_remote_program_args(session_name),
+      })
+   end)
+   if not ok or not new_tab then
+      wezterm.log_error('failed to spawn SSH domain in new tab')
+      return
+   end
+
+   if new_tab and new_tab.activate then
+      new_tab:activate()
+   end
 end
 
 local function build_choices()

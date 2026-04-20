@@ -54,33 +54,62 @@ local function build_ssh_domain_choices()
    return choices, choices_data
 end
 
-local function spawn_ssh_domain_in_new_tab(window, pane, domain)
+local function spawn_ssh_domain_in_new_tab(window, _pane, domain)
    if not domain or not domain.name or domain.name == '' then
       wezterm.log_error('failed to resolve SSH domain name')
       return
    end
 
-   window:perform_action(
-      act.SpawnCommandInNewTab({
-         domain = { DomainName = domain.name },
-         args = ssh.build_remote_program_args(tostring(ssh.resolve_pane_index(pane))),
-      }),
-      pane
-   )
-end
-
-local function split_current_pane(window, pane, direction)
-   local new_pane = pane:split({
-      direction = direction,
-      domain = 'CurrentPaneDomain',
-   })
-
-   local domain_name = pane.get_domain_name and pane:get_domain_name() or nil
-   if not new_pane or not ssh.is_ssh_domain_name(domain_name) then
+   local mux_window = window.mux_window and window:mux_window() or nil
+   if not mux_window or not mux_window.spawn_tab then
+      wezterm.log_error('failed to resolve mux window for SSH spawn')
       return
    end
 
-   new_pane:send_text(ssh.build_tmux_attach_input(tostring(ssh.resolve_pane_index(new_pane))))
+   local session_name = ssh.resolve_next_root_tmux_session_name(mux_window)
+   if not session_name then
+      wezterm.log_error('failed to resolve tmux session name for SSH tab')
+      return
+   end
+
+   local ok, new_tab = pcall(function()
+      return mux_window:spawn_tab({
+         domain = { DomainName = domain.name },
+         args = ssh.build_remote_program_args(session_name),
+      })
+   end)
+   if not ok or not new_tab then
+      wezterm.log_error('failed to spawn SSH domain in new tab')
+      return
+   end
+
+   if new_tab and new_tab.activate then
+      new_tab:activate()
+   end
+end
+
+local function split_current_pane(window, pane, direction)
+   local domain_name = pane.get_domain_name and pane:get_domain_name() or nil
+   local split_config = {
+      direction = direction,
+      domain = 'CurrentPaneDomain',
+   }
+
+   if ssh.is_ssh_domain_name(domain_name) then
+      local mux_windows = wezterm.mux and wezterm.mux.all_windows and wezterm.mux.all_windows() or {}
+      local session_name = ssh.resolve_next_pane_tmux_session_name_from_windows(mux_windows)
+      if not session_name then
+         wezterm.log_error('failed to resolve tmux session name for split SSH pane')
+         return
+      end
+
+      split_config.args = ssh.build_remote_program_args(session_name)
+   end
+
+   local new_pane = pane:split(split_config)
+   if not new_pane or not ssh.is_ssh_domain_name(domain_name) then
+      return
+   end
 end
 
 local ssh_domain_choices, ssh_domain_choices_data = build_ssh_domain_choices()

@@ -13,10 +13,23 @@ local function assert_eq(actual, expected, label)
 end
 
 do
+   assert_eq(ssh.build_tmux_session_name(3), 'wezterm-p3', 'build_tmux_session_name number')
+   assert_eq(ssh.build_tmux_session_name('12'), 'wezterm-p12', 'build_tmux_session_name string')
+end
+
+do
+   assert_eq(
+      ssh.build_root_tmux_session_name(7, 9),
+      'wezterm-w7t9',
+      'build_root_tmux_session_name'
+   )
+end
+
+do
    local cmd = ssh.build_remote_tmux_command('3')
    assert_eq(
       cmd,
-      'SESSION_NAME=3; if command -v tmux >/dev/null 2>&1; then exec tmux new -A -s "$SESSION_NAME"; else exec "${SHELL:-/bin/sh}" -l; fi',
+      'SESSION_NAME=3; if [ -n "$TMUX" ]; then exec "${SHELL:-/bin/sh}" -l; elif command -v tmux >/dev/null 2>&1; then exec tmux new -A -s "$SESSION_NAME"; else exec "${SHELL:-/bin/sh}" -l; fi',
       'build_remote_tmux_command'
    )
 end
@@ -45,9 +58,37 @@ do
 end
 
 do
+   local session_name = ssh.resolve_next_pane_tmux_session_name_from_windows({
+      {
+         tabs = function()
+            return {
+               {
+                  panes = function()
+                     return {
+                        { pane_id = function() return 2 end },
+                        { pane_id = function() return 5 end },
+                     }
+                  end,
+               },
+               {
+                  panes = function()
+                     return {
+                        { pane_id = function() return 9 end },
+                     }
+                  end,
+               },
+            }
+         end,
+      },
+   })
+
+   assert_eq(session_name, 'wezterm-p10', 'resolve_next_pane_tmux_session_name_from_windows')
+end
+
+do
    assert_eq(
       ssh.build_tmux_attach_input('5'),
-      'SESSION_NAME=5; if command -v tmux >/dev/null 2>&1; then exec tmux new -A -s "$SESSION_NAME"; fi\n',
+      'SESSION_NAME=5; if [ -z "$TMUX" ] && command -v tmux >/dev/null 2>&1; then exec tmux new -A -s "$SESSION_NAME"; fi\n',
       'build_tmux_attach_input'
    )
 end
@@ -86,6 +127,43 @@ do
 end
 
 do
+   local session_name = ssh.resolve_tmux_session_name({
+      pane_id = function()
+         return 11
+      end,
+   })
+
+   assert_eq(session_name, 'wezterm-p11', 'resolve_tmux_session_name')
+end
+
+do
+   local session_name = ssh.resolve_root_tmux_session_name({
+      window_id = function()
+         return 3
+      end,
+   }, {
+      tab_id = function()
+         return 4
+      end,
+   })
+
+   assert_eq(session_name, 'wezterm-w3t4', 'resolve_root_tmux_session_name')
+end
+
+do
+   local session_name = ssh.resolve_next_root_tmux_session_name({
+      window_id = function()
+         return 5
+      end,
+      tabs = function()
+         return { {}, {}, {} }
+      end,
+   })
+
+   assert_eq(session_name, 'wezterm-w5t3', 'resolve_next_root_tmux_session_name')
+end
+
+do
    local fake_pane = {
       pane_id = function()
          return 11
@@ -103,4 +181,42 @@ do
    }
 
    assert_eq(ssh.resolve_pane_index(fake_pane), 1, 'resolve_pane_index')
+end
+
+do
+   local first_session = ssh.resolve_tmux_session_name({
+      pane_id = function()
+         return 21
+      end,
+   })
+   local second_session = ssh.resolve_tmux_session_name({
+      pane_id = function()
+         return 22
+      end,
+   })
+
+   if first_session == second_session then
+      error('unique tmux session names should differ across pane ids')
+   end
+end
+
+do
+   local root_session = ssh.resolve_root_tmux_session_name({
+      window_id = function()
+         return 1
+      end,
+   }, {
+      tab_id = function()
+         return 1
+      end,
+   })
+   local pane_session = ssh.resolve_tmux_session_name({
+      pane_id = function()
+         return 1
+      end,
+   })
+
+   if root_session == pane_session then
+      error('root tmux session names should differ from pane tmux session names')
+   end
 end
