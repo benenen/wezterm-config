@@ -51,9 +51,13 @@ setw -g mode-keys vi
 # 进入复制模式后:
 # - v 开始选择
 # - y 复制并退出
+# - 鼠标拖选后不会立刻复制
+# - 右键复制并退出
 # - Escape 取消
 bind -T copy-mode-vi v send -X begin-selection
 bind -T copy-mode-vi y send -X copy-selection-and-cancel
+bind -T copy-mode-vi MouseDragEnd1Pane send -X stop-selection
+bind -T copy-mode-vi MouseDown3Pane send -X copy-pipe-and-cancel "pbcopy"
 bind -T copy-mode-vi Escape send -X cancel
 
 # macOS 下把选中内容直接送进系统剪贴板.
