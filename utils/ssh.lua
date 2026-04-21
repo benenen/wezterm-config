@@ -1,11 +1,11 @@
 local M = {}
 
-function M.build_tmux_session_name(pane_id)
-   if pane_id == nil then
+function M.build_tmux_session_name(index)
+   if index == nil then
       return nil
    end
 
-   local normalized = tostring(pane_id)
+   local normalized = tostring(index)
    if normalized == '' then
       return nil
    end
@@ -14,18 +14,16 @@ function M.build_tmux_session_name(pane_id)
 end
 
 function M.resolve_tmux_session_name(pane)
-   if not pane or not pane.pane_id then
+   if not pane then
       return nil
    end
 
-   local ok, pane_id = pcall(function()
-      return pane:pane_id()
-   end)
-   if not ok then
+   local pane_index = M.resolve_pane_index(pane)
+   if type(pane_index) ~= 'number' or pane_index < 0 then
       return nil
    end
 
-   return M.build_tmux_session_name(pane_id)
+   return M.build_tmux_session_name(pane_index + 1)
 end
 
 function M.build_root_tmux_session_name(window_id, tab_id)
@@ -39,7 +37,7 @@ function M.build_root_tmux_session_name(window_id, tab_id)
       return nil
    end
 
-   return string.format('wezterm-w%st%s', normalized_window_id, normalized_tab_id)
+   return M.build_tmux_session_name(1)
 end
 
 function M.resolve_root_tmux_session_name(window, tab)
@@ -86,33 +84,34 @@ function M.resolve_next_root_tmux_session_name(mux_window)
    return M.build_root_tmux_session_name(window_id, #tabs)
 end
 
-function M.resolve_next_pane_tmux_session_name_from_windows(windows)
-   local max_pane_id = 0
+function M.resolve_next_pane_tmux_session_name_from_windows(pane)
+   if not pane or not pane.tab then
+      return nil
+   end
 
-   for _, mux_window in ipairs(windows or {}) do
-      local ok_tabs, tabs = pcall(function()
-         return mux_window:tabs()
-      end)
-      if ok_tabs and type(tabs) == 'table' then
-         for _, tab in ipairs(tabs) do
-            local ok_panes, panes = pcall(function()
-               return tab:panes()
-            end)
-            if ok_panes and type(panes) == 'table' then
-               for _, pane in ipairs(panes) do
-                  local ok_pane_id, pane_id = pcall(function()
-                     return pane:pane_id()
-                  end)
-                  if ok_pane_id and type(pane_id) == 'number' and pane_id > max_pane_id then
-                     max_pane_id = pane_id
-                  end
-               end
-            end
-         end
+   local ok_tab, tab = pcall(function()
+      return pane:tab()
+   end)
+   if not ok_tab or not tab or not tab.panes_with_info then
+      return nil
+   end
+
+   local ok_panes, panes = pcall(function()
+      return tab:panes_with_info()
+   end)
+   if not ok_panes or type(panes) ~= 'table' then
+      return nil
+   end
+
+   local max_index = -1
+   for _, info in ipairs(panes) do
+      local index = info and info.index or nil
+      if type(index) == 'number' and index > max_index then
+         max_index = index
       end
    end
 
-   return M.build_tmux_session_name(max_pane_id + 1)
+   return M.build_tmux_session_name(max_index + 2)
 end
 
 function M.resolve_pane_index_from_info(panes, current_pane_id)

@@ -20,7 +20,7 @@ end
 do
    assert_eq(
       ssh.build_root_tmux_session_name(7, 9),
-      'wezterm-w7t9',
+      'wezterm-p1',
       'build_root_tmux_session_name'
    )
 end
@@ -59,30 +59,19 @@ end
 
 do
    local session_name = ssh.resolve_next_pane_tmux_session_name_from_windows({
-      {
-         tabs = function()
-            return {
-               {
-                  panes = function()
-                     return {
-                        { pane_id = function() return 2 end },
-                        { pane_id = function() return 5 end },
-                     }
-                  end,
-               },
-               {
-                  panes = function()
-                     return {
-                        { pane_id = function() return 9 end },
-                     }
-                  end,
-               },
-            }
-         end,
-      },
+      tab = function()
+         return {
+            panes_with_info = function()
+               return {
+                  { index = 0, pane = { pane_id = function() return 2 end } },
+                  { index = 1, pane = { pane_id = function() return 5 end } },
+               }
+            end,
+         }
+      end,
    })
 
-   assert_eq(session_name, 'wezterm-p10', 'resolve_next_pane_tmux_session_name_from_windows')
+   assert_eq(session_name, 'wezterm-p3', 'resolve_next_pane_tmux_session_name_from_windows')
 end
 
 do
@@ -131,9 +120,19 @@ do
       pane_id = function()
          return 11
       end,
+      tab = function()
+         return {
+            panes_with_info = function()
+               return {
+                  { index = 0, pane = { pane_id = function() return 10 end } },
+                  { index = 1, pane = { pane_id = function() return 11 end } },
+               }
+            end,
+         }
+      end,
    })
 
-   assert_eq(session_name, 'wezterm-p11', 'resolve_tmux_session_name')
+   assert_eq(session_name, 'wezterm-p2', 'resolve_tmux_session_name')
 end
 
 do
@@ -147,7 +146,7 @@ do
       end,
    })
 
-   assert_eq(session_name, 'wezterm-w3t4', 'resolve_root_tmux_session_name')
+   assert_eq(session_name, 'wezterm-p1', 'resolve_root_tmux_session_name')
 end
 
 do
@@ -160,7 +159,7 @@ do
       end,
    })
 
-   assert_eq(session_name, 'wezterm-w5t3', 'resolve_next_root_tmux_session_name')
+   assert_eq(session_name, 'wezterm-p1', 'resolve_next_root_tmux_session_name')
 end
 
 do
@@ -188,10 +187,28 @@ do
       pane_id = function()
          return 21
       end,
+      tab = function()
+         return {
+            panes_with_info = function()
+               return {
+                  { index = 0, pane = { pane_id = function() return 21 end } },
+               }
+            end,
+         }
+      end,
    })
    local second_session = ssh.resolve_tmux_session_name({
       pane_id = function()
          return 22
+      end,
+      tab = function()
+         return {
+            panes_with_info = function()
+               return {
+                  { index = 1, pane = { pane_id = function() return 22 end } },
+               }
+            end,
+         }
       end,
    })
 
@@ -214,9 +231,34 @@ do
       pane_id = function()
          return 1
       end,
+      tab = function()
+         return {
+            panes_with_info = function()
+               return {
+                  { index = 0, pane = { pane_id = function() return 1 end } },
+               }
+            end,
+         }
+      end,
    })
 
-   if root_session == pane_session then
-      error('root tmux session names should differ from pane tmux session names')
-   end
+   assert_eq(root_session, 'wezterm-p1', 'root tmux session name')
+   assert_eq(pane_session, 'wezterm-p1', 'first pane tmux session name')
+end
+
+do
+   local session_name = ssh.resolve_next_pane_tmux_session_name_from_windows({
+      tab = function()
+         return {
+            panes_with_info = function()
+               return {
+                  { index = 2, pane = { pane_id = function() return 7 end } },
+                  { index = 0, pane = { pane_id = function() return 5 end } },
+               }
+            end,
+         }
+      end,
+   })
+
+   assert_eq(session_name, 'wezterm-p4', 'resolve_next_pane_tmux_session_name_from_windows max index')
 end

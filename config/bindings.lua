@@ -96,8 +96,7 @@ local function split_current_pane(window, pane, direction)
    }
 
    if ssh.is_ssh_domain_name(domain_name) then
-      local mux_windows = wezterm.mux and wezterm.mux.all_windows and wezterm.mux.all_windows() or {}
-      local session_name = ssh.resolve_next_pane_tmux_session_name_from_windows(mux_windows)
+      local session_name = ssh.resolve_next_pane_tmux_session_name_from_windows(pane)
       if not session_name then
          wezterm.log_error('failed to resolve tmux session name for split SSH pane')
          return
