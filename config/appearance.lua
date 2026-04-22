@@ -64,13 +64,10 @@ return {
       -- font = fonts.font,
       -- font_size = fonts.font_size,
    },
-   -- inactive_pane_hsb = {
-   --    saturation = 0.9,
-   --    brightness = 0.65,
-   -- },
+   -- 未选中面板添加灰色半透明遮罩效果
    inactive_pane_hsb = {
-      saturation = 1,
-      brightness = 1,
+      saturation = 0.7,  -- 降低饱和度，让颜色偏灰
+      brightness = 0.6,  -- 降低亮度，添加暗色遮罩
    },
 
    visual_bell = {
