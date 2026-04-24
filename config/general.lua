@@ -6,11 +6,7 @@ return {
    status_update_interval = 1000,
    audible_bell = 'Disabled',
 
-   scrollback_lines = 20000,
-
-   -- 按住 Shift 时绕过 tmux, 使用 WezTerm 原生选择
-   -- 这样可以直接选择文字而不进入 tmux 复制模式
-   bypass_mouse_reporting_modifiers = 'SHIFT',
+   scrollback_lines = 100000,
 
    hyperlink_rules = {
       -- Matches: a URL in parens: (URL)
